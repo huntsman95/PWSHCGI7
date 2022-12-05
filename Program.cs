@@ -4,7 +4,7 @@ using System.Text;
 using System.Collections.ObjectModel;
 
 string defaultHeader = "Content-Type: text/html" + Environment.NewLine + Environment.NewLine;
-string psargs = "";
+string? psargs = "";
 string psargsErr = "";
 
 try
@@ -28,7 +28,7 @@ if (Environment.GetEnvironmentVariable("REQUEST_METHOD") == "POST") //experiment
 {
     System.IO.Stream s = Console.OpenStandardInput();
     System.IO.BinaryReader br = new System.IO.BinaryReader(s);
-    string Length = Environment.GetEnvironmentVariable("CONTENT_LENGTH");
+    string? Length = Environment.GetEnvironmentVariable("CONTENT_LENGTH");
     int Size = Int32.Parse(Length);
     byte[] Data = new byte[Size];
     br.Read(Data, 0, Size);
@@ -42,9 +42,9 @@ string OutputBuffer = "";
 
 using (PowerShell PowerShellInst = PowerShell.Create())
 {
-    PowerShellInst.AddCommand("Set-ExecutionPolicy").AddArgument("Unrestricted")
-    .AddParameter("Scope", "CurrentUser");
-    PowerShellInst.AddScript(args[0], true);
+    PowerShellInst.AddCommand("Set-ExecutionPolicy").AddArgument("Unrestricted").AddParameter("Scope", "CurrentUser"); //Ensure we are allowed to run scripts
+
+    PowerShellInst.AddScript(args[0] + " " + psargs, true);
     try
     {
         Collection<PSObject> results = PowerShellInst.Invoke();
@@ -56,7 +56,7 @@ using (PowerShell PowerShellInst = PowerShell.Create())
             stringBuilder.AppendLine(obj.ToString());
         }
 
-        if (PowerShellInst.HadErrors)
+        if (PowerShellInst.HadErrors && (Environment.GetEnvironmentVariable("PWSHCGI_DEBUG")=="TRUE"))
         {
             foreach(var error in PowerShellInst.Streams.Error)
             {
